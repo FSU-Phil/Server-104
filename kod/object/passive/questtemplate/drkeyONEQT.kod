@@ -1,0 +1,226 @@
+// Meridian 59, Copyright 1994-2012 Andrew Kirmse and Chris Kirmse.
+// All rights reserved.
+//
+// This software is distributed under a license that is described in
+// the LICENSE file that accompanies it.
+//
+// Meridian is a registered trademark.
+
+
+/////////////////////////////////////////////////////////////////////////////////
+DRkeyONEQuest is QuestTemplate
+// Quest nodes 219, 220, 221, 222
+// QNT_ID_DR_KEYONE_ONE, QNT_ID_DR_KEYONE_TWO,
+// QNT_ID_DR_KEYONE_THREE, QNT_ID_DR_KEYONE_FOUR,
+//
+
+// QuestTemplate is
+// [ quest template index
+//   quest template object
+//   number of players,
+//   type of quest,
+//   eligible player restrictions,
+//   quest nodes,
+//   max number active,
+//   currently active quests,
+//   percent chance of scheduling (on timer firing)
+//   special restrictions ]
+
+constants:
+
+   include blakston.khd
+
+resources:
+
+   //include scimprofqt.lkod -- needs to be created for these quests
+
+   // Quest description.
+   drkeyonequest_icon_rsc = irift.bgf
+   drkeyonequest_name_rsc = "Death Realm Key One"
+
+   // This description is used if there is an error preventing the others
+   // from being displayed.
+   drkeyonequest_desc_rsc = \
+      "Amerantha has sent you to slay a monster in order to prove your abilities, "
+      "and provide you with a key to Old Cor Noth."
+
+   drkeyonequest_kill_rsc = \
+      "Amerantha will provide you with a key, but first you must "
+      "slay a %s. Complete this task and report back to her."
+
+   drkeyonequest_return_rsc = \
+      "Return to Amerantha and let her know the task has been "
+      "completed."
+
+   drkeyonequest_completed = \
+      "You have completed Amerantha's quest.  Amerantha will now "
+      "be willing to provide you a key to Old Cor Noth."
+
+   // Quest resources.
+   drkeyonequest_trigger = "I need a key"
+   drkeyonequest_assign_2 = \
+      "So you think you are strong enough to wander the Death Realm. "
+      "Before I will provide you with a key to the next city, "
+      "you must prove yourself by slaying %INDEF_MONSTER%MONSTER. "
+      "Do this and return to me. "
+   drkeyonequest_failure_2 = \
+      "Subject: You failed.\n"
+      "You failed to complete the task Amerantha set for you. "
+      "Return another day and I will consider your willingness "
+      "waste my time again and there shall be consiquences."
+   drkeyonequest_assign_3 = \
+      "That took long enough.  I do not like to be kept waiting so long.  "
+      "With this extra time I have decided that you must slay "
+      "%INDEF_MONSTER%MONSTER now."
+   drkeyonequest_failure_3 = \
+      "Subject: You failed.\n"
+      "You failed to complete the task Amerantha set for you. "
+      "Return another day and I will consider your willingness "
+      "waste my time again and there shall be consiquences."
+   drkeyonequest_assign_4 = \
+      "You're back and alive, I thought the underworld had taken you."
+      "I do not believe you actually killed %INDEF_MONSTER%MONSTER.  If "
+      "it is true, do it again and we'll see."
+   drkeyonequest_success_4 = \
+      "Finally. It took you long enough. The other's might not be quite "
+      "as patient as me. Take this key and enter the Old Cor Noth. "
+      "Be warned, it will only get more difficult."
+   drkeyonequest_failure_4 = \
+      "Subject: You failed.\n"
+      "You failed to complete the task Amerantha set for you. "
+      "Return another day and I will consider your willingness "
+      "waste my time again and there shall be consiquences."
+
+classvars:
+
+   vrIcon = drkeyonequest_icon_rsc
+   vrName = drkeyonequest_name_rsc
+   vrDesc = drkeyonequest_desc_rsc
+
+   vrKill = drkeyonequest_kill_rsc
+   vrReturn = drkeyonequest_return_rsc
+   vrCompleted = drkeyonequest_completed
+
+   // The QST_ID constant for this quest.
+   viQuestID = QST_ID_DR_KEYONE
+
+properties:
+
+   piNumPlayers = 1
+   piPlayerRestrict = Q_PLAYER_NOTSUCCEEDED | Q_PLAYER_NOTFAILED_RECENTLY
+   plSpecialRestrict = $
+   piMaxPlayers = 50
+   piSchedulePct = 100
+   plMonsterList = $
+   piTimeLimit = 4 * 3600 // 4 hours.
+
+messages:
+
+   Constructor()
+   {
+      // Quest node list to send to QuestEngine.
+      plQuestNodes = [QNT_ID_DR_KEYONE_ONE, QNT_ID_DR_KEYONE_TWO,
+                      QNT_ID_DR_KEYONE_THREE, QNT_ID_DR_KEYONE_FOUR];
+					  
+      plMonsterList = [&Spirit,&Revenantb,&Chimera,&Cyclops,&FollowerOfQor,&MinotaurBerserker,
+                        &Tyrant,&FallenMonk,&HellWasp,&Croco,&Vozun,&Dulahan,&BlackHydra,
+                        &RedHydra,&GoldHydra,&GreenHydra,&GreySeeker,&GreenSeeker,&BrownSeeker,
+                        &DeathMiteSoldier,&Snake,&DeathMiteScout,&DeathMiteTank,&DeathMiteMage];
+
+      propagate;
+   }
+
+   SendQuestNodeTemplates()
+   {
+      local lNPCs, oQE, oLib;
+
+      oQE = Send(SYS,@GetQuestEngine);
+      oLib = Send(SYS,@GetLibrary);
+
+      // Template #219 is Death Realm key one quest kickoff, "I need a key"
+      // QNT_ID_DR_KEYONE_ONE
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MESSAGE,
+               #cargolist=[drkeyonequest_trigger],
+               #quest_node_index=QNT_ID_DR_KEYONE_ONE)
+      {
+         Send(oQE,@SetQuestNodeNPCList,#index=QNT_ID_DR_KEYONE_ONE,
+               #new_NPC_list=Send(oLib,@GetOccupationList,
+                                 #cNPC_class=&Amerantha));
+      }
+      else
+      {
+         Debug("Error building QN: QNT_ID_DR_KEYONE_ONE");
+      }
+
+      // Template #220 is death realm key quest, random death realm monster
+      // QNT_ID_DR_KEYONE_TWO
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER,
+               #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=plMonsterList,
+               #timelimit=piTimeLimit,#quest_node_index=QNT_ID_DR_KEYONE_TWO)
+      {
+         Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_DR_KEYONE_TWO,
+               #new_hint=drkeyonequest_assign_2);
+         Send(oQE,@SetQuestNodeFailureHint,#index=QNT_ID_DR_KEYONE_TWO,
+               #new_hint=drkeyonequest_failure_2);
+      }
+      else
+      {
+         Debug("Error building QN: QNT_ID_DR_KEYONE_TWO");
+      }
+      // Template #221 is scimitar learn quest, another death realm monster
+      // QNT_ID_DR_KEYONE_THREE
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER,
+               #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=plMonsterList,
+               #timelimit=piTimeLimit,#quest_node_index=QNT_ID_DR_KEYONE_THREE)
+      {
+         Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_DR_KEYONE_THREE,
+               #new_hint=drkeyonequest_assign_3);
+         Send(oQE,@SetQuestNodeFailureHint,#index=QNT_ID_DR_KEYONE_THREE,
+               #new_hint=drkeyonequest_failure_3);
+      }
+      else
+      {
+         Debug("Error building QN: QNT_ID_DR_KEYONE_THREE");
+      }
+
+      // Template #222 is scimitar learn quest, kill another death realm monster.
+      // QNT_ID_DR_KEYONE_FOUR
+      if Send(oQE,@AddQuestNodeTemplate,#questnode_type=QN_TYPE_MONSTER,
+               #NPC_modifier=QN_NPCMOD_SAME,#monsterlist=plMonsterList,
+               #prizelist=[ [ QN_PRIZETYPE_ITEMCLASS, &CorNothKey, 1 ] ],
+               #timelimit=piTimeLimit,#quest_node_index=QNT_ID_DR_KEYONE_FOUR)
+      {
+         Send(oQE,@SetQuestNodeAssignHint,#index=QNT_ID_DR_KEYONE_FOUR,
+               #new_hint=drkeyonequest_assign_4);
+         Send(oQE,@SetQuestNodeSuccessHint,#index=QNT_ID_DR_KEYONE_FOUR,
+               #new_hint=drkeyonequest_success_4);
+         Send(oQE,@SetQuestNodeFailureHint,#index=QNT_ID_DR_KEYONE_FOUR,
+               #new_hint=drkeyonequest_failure_4);
+      }
+      else
+      {
+         Debug("Error building QN: QNT_ID_DR_KEYONE_FOUR");
+      }
+
+      return;
+   }
+
+   MainDesc(who=$,index=$,oQuestNode=$)
+   {
+      local oMob;
+
+      oMob = Send(oQuestNode,@GetQuestMonster);
+      if oMob = $
+      {
+         AddPacket(4,vrReturn);
+      }
+      else
+      {
+         AddPacket(4,vrKill,4,Send(oMob,@GetName));
+      }
+
+      return;
+   }
+
+end
+/////////////////////////////////////////////////////////////////////////////////
